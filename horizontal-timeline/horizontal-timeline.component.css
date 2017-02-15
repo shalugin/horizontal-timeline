@@ -164,6 +164,13 @@ ol, ul {
   }
 }
 
+.cd-horizontal-timeline li span {
+  position: absolute;
+  left: 1700px;
+  bottom: -30px;
+  font-size: 12px;
+}
+
 .cd-timeline-navigation a {
   /* these are the left/right arrows to navigate the timeline */
   position: absolute;
@@ -204,7 +211,7 @@ ol, ul {
   -ms-transform: translateX(-50%) translateY(-50%);
   -o-transform: translateX(-50%) translateY(-50%);
   transform: translateX(-50%) translateY(-50%);
-  background: url(cd-arrow.svg) no-repeat 0 0;
+  background: url(assets/images/cd-arrow.svg) no-repeat 0 0;
 }
 
 .cd-timeline-navigation a.prev {

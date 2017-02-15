@@ -70,8 +70,11 @@ export class HorizontalTimelineComponent implements AfterViewInit {
   loaded: boolean = false;
   selectedIndex: number = 0;
 
-  @Input() eventsMinDistance: number = 100;
+  @Input() eventsMinDistance: number = 80;
   @Input() timelineElements: TimelineElement[];
+  @Input() dateFormat: string = 'dd.MM.yyyy';
+  @Input() disabled: boolean = false;
+  @Input() showContent: boolean = false;
 
   @ViewChild('timelineWrapper') timelineWrapper: ElementRef;
   @ViewChild('eventsWrapper') eventsWrapper: ElementRef;
@@ -103,6 +106,9 @@ export class HorizontalTimelineComponent implements AfterViewInit {
 
   onEventClick(event, selectedItem: TimelineElement) {
     event.preventDefault();
+    if (this.disabled) {
+      return;
+    }
     let element = event.target;
     // detect click on the a single event - show new event content
     let visibleItem = this.timelineElements[0];
@@ -114,9 +120,7 @@ export class HorizontalTimelineComponent implements AfterViewInit {
     });
     this.selectedIndex = this.timelineElements.indexOf(selectedItem);
     selectedItem.selected = true;
-    HorizontalTimelineComponent.updateOlderEvents(element);
     HorizontalTimelineComponent.updateFilling(element, this.fillingLine, this.timelineTotWidth);
-    this.updateVisibleContent(element, this.eventsContent.nativeElement, selectedItem, visibleItem);
   }
 
   initTimeline(timeLines: TimelineElement[]) {
@@ -183,6 +187,11 @@ export class HorizontalTimelineComponent implements AfterViewInit {
       let distance = HorizontalTimelineComponent.dayDiff(elements[0].date, component.date);
       let distanceNorm = Math.round(distance / eventsMinLapse) + 2;
       timelineEventsArray[i].nativeElement.style.left = distanceNorm * min + 'px';
+      // span
+      let span = timelineEventsArray[i].nativeElement.parentElement.children[1];
+      let aWidth = HorizontalTimelineComponent.getElementWidth(timelineEventsArray[i].nativeElement);
+      let spanWidth = HorizontalTimelineComponent.getElementWidth(span);
+      span.style.left = distanceNorm * min + (aWidth - spanWidth) / 2 + 'px';
       i++;
     }
   }
@@ -199,13 +208,8 @@ export class HorizontalTimelineComponent implements AfterViewInit {
     return totalWidth;
   }
 
-  updateVisibleContent(element, eventsContent, selectedItem: TimelineElement, visibleItem: TimelineElement) {
-    let eventDate = element.attributes.getNamedItem('data-date').value;
-    let visibleContent = eventsContent.querySelector('.selected');
-    let selectedContent = eventsContent.querySelector('[data-date="' + eventDate + '"]');
-    let selectedContentHeight = window.getComputedStyle(selectedContent, null).height;
-
-    eventsContent.style.height = selectedContentHeight;
+  private static getElementWidth(element): number {
+    return Number(window.getComputedStyle(element, null).width.replace('px', ''));
   }
 
   private static parentElement(element, tagName: string) {
@@ -221,28 +225,6 @@ export class HorizontalTimelineComponent implements AfterViewInit {
       parent = parent.parentNode;
       if (!parent) {
         return null;
-      }
-    }
-  }
-
-  private static updateOlderEvents(element) {
-    let parentElement = HorizontalTimelineComponent.parentElement(element, 'li');
-    if (!parentElement || !parentElement.parentNode) {
-      return;
-    }
-
-    let before = true;
-    if (parentElement.parentNode.children && parentElement.parentNode.children.length) {
-      for (let item of parentElement.parentNode.children) {
-        if (item == parentElement) {
-          before = false;
-          return;
-        }
-        if (before) {
-          item.querySelector('a').classList.add('older-event');
-        } else {
-          item.querySelector('a').classList.remove('older-event');
-        }
       }
     }
   }
