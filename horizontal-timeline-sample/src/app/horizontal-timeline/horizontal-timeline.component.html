@@ -1,0 +1,38 @@
+<section class="cd-horizontal-timeline" [ngClass]="{'loaded': loaded}">
+  <div class="timeline">
+    <div class="events-wrapper" #timelineWrapper>
+      <div class="events" #eventsWrapper>
+        <ol>
+          <li *ngFor="let item of timelineElements; let index = index">
+            <a #timelineEvents href="#" [attr.data-date]="item.date | date:dateFormat"
+               [ngClass]="{'selected': item.selected, 'older-event': index < selectedIndex}"
+               (click)="onEventClick($event, item)">{{item.date | date:dateFormat}}</a>
+            <span>{{item.caption}}</span>
+          </li>
+        </ol>
+        <span class="filling-line" aria-hidden="true" #fillingLine></span>
+      </div>
+    </div>
+
+    <ul class="cd-timeline-navigation">
+      <li>
+        <a href="#" (click)="onPrevClick($event)" class="prev" [ngClass]="{'inactive':prevLinkInactive}">Prev</a>
+      </li>
+      <li>
+        <a href="#" (click)="onNextClick($event)" class="next" [ngClass]="{'inactive':nextLinkInactive}">Next</a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="events-content" #eventsContent *ngIf="showContent">
+    <ol>
+      <li *ngFor="let item of timelineElements; let index = index" [attr.data-date]="item.date | date:dateFormat"
+          [attr.data-state]="item.selected ? 'active' : (index < selectedIndex ? 'left' : 'right')"
+          [@contentState]="item.selected ? 'active' : (index < selectedIndex ? 'left' : 'right')">
+        <h2>{{item.title}}</h2>
+        <em>{{item.date | date:dateFormat}}</em>
+        <p>{{item.content}}</p>
+      </li>
+    </ol>
+  </div>
+</section>
