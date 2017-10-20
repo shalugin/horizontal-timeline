@@ -1,19 +1,6 @@
-import {
-  Component,
-  ElementRef,
-  ViewChild,
-  Input,
-  ViewChildren,
-  QueryList,
-  AfterViewInit,
-  animate,
-  transition,
-  style,
-  trigger,
-  keyframes,
-  state
-} from "@angular/core";
-import { TimelineElement } from "./timeline-element";
+import { AfterViewInit, Component, ElementRef, Input, QueryList, ViewChild, ViewChildren, } from '@angular/core';
+import { TimelineElement } from './timeline-element';
+import { animate, keyframes, state, style, transition, trigger } from '@angular/animations';
 
 @Component({
   selector: 'horizontal-timeline',
@@ -173,8 +160,8 @@ export class HorizontalTimelineComponent implements AfterViewInit {
   private static updateFilling(selectedEvent, filling, totWidth) {
     // change .filling-line length according to the selected event
     let eventStyle = window.getComputedStyle(selectedEvent, null);
-    let eventLeft = eventStyle.getPropertyValue("left");
-    let eventWidth = eventStyle.getPropertyValue("width");
+    let eventLeft = eventStyle.getPropertyValue('left');
+    let eventWidth = eventStyle.getPropertyValue('width');
     let eventLeftNum = Number(eventLeft.replace('px', '')) + Number(eventWidth.replace('px', '')) / 2;
     let scaleValue = eventLeftNum / totWidth;
     HorizontalTimelineComponent.setTransformValue(filling.nativeElement, 'scaleX', scaleValue);
@@ -231,11 +218,11 @@ export class HorizontalTimelineComponent implements AfterViewInit {
 
   private static getTranslateValue(timeline) {
     let timelineStyle = window.getComputedStyle(timeline, null);
-    let timelineTranslate = timelineStyle.getPropertyValue("-webkit-transform") ||
-      timelineStyle.getPropertyValue("-moz-transform") ||
-      timelineStyle.getPropertyValue("-ms-transform") ||
-      timelineStyle.getPropertyValue("-o-transform") ||
-      timelineStyle.getPropertyValue("transform");
+    let timelineTranslate = timelineStyle.getPropertyValue('-webkit-transform') ||
+      timelineStyle.getPropertyValue('-moz-transform') ||
+      timelineStyle.getPropertyValue('-ms-transform') ||
+      timelineStyle.getPropertyValue('-o-transform') ||
+      timelineStyle.getPropertyValue('transform');
 
     let translateValue = 0;
     if (timelineTranslate.indexOf('(') >= 0) {
@@ -250,11 +237,11 @@ export class HorizontalTimelineComponent implements AfterViewInit {
   }
 
   private static setTransformValue(element, property, value) {
-    element.style["-webkit-transform"] = property + "(" + value + ")";
-    element.style["-moz-transform"] = property + "(" + value + ")";
-    element.style["-ms-transform"] = property + "(" + value + ")";
-    element.style["-o-transform"] = property + "(" + value + ")";
-    element.style["transform"] = property + "(" + value + ")";
+    element.style['-webkit-transform'] = property + '(' + value + ')';
+    element.style['-moz-transform'] = property + '(' + value + ')';
+    element.style['-ms-transform'] = property + '(' + value + ')';
+    element.style['-o-transform'] = property + '(' + value + ')';
+    element.style['transform'] = property + '(' + value + ')';
   }
 
   private static dayDiff(first, second) {
