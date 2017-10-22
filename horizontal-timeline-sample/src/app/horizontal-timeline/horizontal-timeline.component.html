@@ -1,11 +1,10 @@
 <section class="cd-horizontal-timeline" [ngClass]="{'loaded': loaded}">
   <div class="timeline">
-    <div class="events-wrapper" #timelineWrapper>
-      <div class="events" #eventsWrapper>
+    <div class="events-wrapper">
+      <div class="events" #eventsWrapper [style.width.px]="eventsWrapperWidth">
         <ol>
           <li *ngFor="let item of timelineElements; let index = index">
-            <a #timelineEvents href="#" [attr.data-date]="item.date | date:dateFormat"
-               [ngClass]="{'selected': item.selected, 'older-event': index < selectedIndex}"
+            <a #timelineEvents href="#" [ngClass]="{'selected': item.selected, 'older-event': index < selectedIndex}"
                (click)="onEventClick($event, item)">{{item.date | date:dateFormat}}</a>
             <span>{{item.caption}}</span>
           </li>
@@ -16,18 +15,17 @@
 
     <ul class="cd-timeline-navigation">
       <li>
-        <a href="#" (click)="onPrevClick($event)" class="prev" [ngClass]="{'inactive':prevLinkInactive}">Prev</a>
+        <a href="#" (click)="onScrollClick($event, false)" class="prev" [ngClass]="{'inactive':prevLinkInactive}">Prev</a>
       </li>
       <li>
-        <a href="#" (click)="onNextClick($event)" class="next" [ngClass]="{'inactive':nextLinkInactive}">Next</a>
+        <a href="#" (click)="onScrollClick($event, true)" class="next" [ngClass]="{'inactive':nextLinkInactive}">Next</a>
       </li>
     </ul>
   </div>
 
-  <div class="events-content" #eventsContent *ngIf="showContent">
+  <div class="events-content" *ngIf="showContent">
     <ol>
-      <li *ngFor="let item of timelineElements; let index = index" [attr.data-date]="item.date | date:dateFormat"
-          [attr.data-state]="item.selected ? 'active' : (index < selectedIndex ? 'left' : 'right')"
+      <li *ngFor="let item of timelineElements; let index = index"
           [@contentState]="item.selected ? 'active' : (index < selectedIndex ? 'left' : 'right')">
         <h2>{{item.title}}</h2>
         <em>{{item.date | date:dateFormat}}</em>

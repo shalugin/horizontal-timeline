@@ -1,4 +1,14 @@
-import { AfterViewInit, Component, ElementRef, Input, QueryList, ViewChild, ViewChildren, } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  Input,
+  QueryList,
+  ViewChild,
+  ViewChildren,
+} from '@angular/core';
 import { TimelineElement } from './timeline-element';
 import { animate, keyframes, state, style, transition, trigger } from '@angular/animations';
 
@@ -6,6 +16,7 @@ import { animate, keyframes, state, style, transition, trigger } from '@angular/
   selector: 'horizontal-timeline',
   templateUrl: 'horizontal-timeline.component.html',
   styleUrls: ['horizontal-timeline.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [
     trigger('contentState', [
       state('active', style({
@@ -55,17 +66,73 @@ export class HorizontalTimelineComponent implements AfterViewInit {
   nextLinkInactive: boolean = false;
   loaded: boolean = false;
   selectedIndex: number = 0;
-  @Input() eventsMinDistance: number = 80;
-  @Input() timelineElements: TimelineElement[];
-  @Input() dateFormat: string = 'dd.MM.yyyy';
-  @Input() disabled: boolean = false;
-  @Input() showContent: boolean = false;
-  @ViewChild('timelineWrapper') timelineWrapper: ElementRef;
   @ViewChild('eventsWrapper') eventsWrapper: ElementRef;
   @ViewChild('fillingLine') fillingLine: ElementRef;
-  @ViewChild('eventsContent') eventsContent: ElementRef;
   @ViewChildren('timelineEvents') timelineEvents: QueryList<ElementRef>;
-  private timelineTotWidth: number = 0;
+  eventsWrapperWidth: number = 0;
+  private _viewInitialized = false;
+
+  constructor(private _cdr: ChangeDetectorRef) {
+  }
+
+  private _timelineWrapperWidth = 720;
+
+  @Input()
+  set timelineWrapperWidth(value: number) {
+    this._timelineWrapperWidth = value;
+    this._cdr.detectChanges();
+  }
+
+  private _eventsMinDistance: number = 80;
+
+  @Input()
+  set eventsMinDistance(value: number) {
+    this._eventsMinDistance = value;
+    this.initView();
+  }
+
+  private _timelineElements: TimelineElement[];
+
+  get timelineElements(): TimelineElement[] {
+    return this._timelineElements;
+  }
+
+  @Input()
+  set timelineElements(value: TimelineElement[]) {
+    this._timelineElements = value;
+    this.initView();
+  }
+
+  private _dateFormat: string = 'dd.MM.yyyy';
+
+  get dateFormat(): string {
+    return this._dateFormat;
+  }
+
+  @Input()
+  set dateFormat(value: string) {
+    this._dateFormat = value;
+    this.initView();
+  }
+
+  private _disabled: boolean = false;
+
+  @Input()
+  set disabled(value: boolean) {
+    this._disabled = value;
+  }
+
+  private _showContent: boolean = false;
+
+  get showContent(): boolean {
+    return this._showContent;
+  }
+
+  @Input()
+  set showContent(value: boolean) {
+    this._showContent = value;
+    this._cdr.detectChanges();
+  }
 
   private static pxToNumber(val: string): number {
     return Number(val.replace('px', ''));
@@ -77,16 +144,6 @@ export class HorizontalTimelineComponent implements AfterViewInit {
       return 0;
     }
     return HorizontalTimelineComponent.pxToNumber(computedStyle.width);
-  }
-
-  private static updateFilling(selectedEvent: any, filling: any, totWidth: number) {
-    // change .filling-line length according to the selected event
-    let eventStyle = window.getComputedStyle(selectedEvent);
-    let eventLeft = eventStyle.getPropertyValue('left');
-    let eventWidth = eventStyle.getPropertyValue('width');
-    let eventLeftNum = HorizontalTimelineComponent.pxToNumber(eventLeft) + HorizontalTimelineComponent.pxToNumber(eventWidth) / 2;
-    let scaleValue = eventLeftNum / totWidth;
-    HorizontalTimelineComponent.setTransformValue(filling.nativeElement, 'scaleX', scaleValue);
   }
 
   private static parentElement(element: any, tagName: string) {
@@ -134,11 +191,15 @@ export class HorizontalTimelineComponent implements AfterViewInit {
     element.style['transform'] = property + '(' + value + ')';
   }
 
-  private static dayDiff(first: any, second: any) {
-    return Math.round(second - first);
+  private static dayDiff(first: Date, second: Date): number {
+    return Math.round(second.getTime() - first.getTime());
   }
 
-  private static minLapse(elements: TimelineElement[]) {
+  private static minLapse(elements: TimelineElement[]): number {
+    if (elements && elements.length && elements.length === 1) {
+      return 0;
+    }
+
     let result: number = 0;
     for (let i = 1; i < elements.length; i++) {
       let distance = HorizontalTimelineComponent.dayDiff(elements[i - 1].date, elements[i].date);
@@ -148,79 +209,64 @@ export class HorizontalTimelineComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    if (this.timelineElements && this.timelineElements.length) {
-      for (let i = 0; i < this.timelineElements.length; i++) {
-        if (this.timelineElements[i].selected) {
-          this.selectedIndex = i;
-          break;
-        }
-      }
-      this.initTimeline(this.timelineElements);
-    }
+    this._cdr.detach();
+    this._viewInitialized = true;
+    this.initView();
   }
 
-  onPrevClick(event: Event) {
+  onScrollClick(event: Event, forward: boolean) {
     event.preventDefault();
-    this.updateSlide(this.timelineTotWidth, 'prev');
-  }
-
-  onNextClick(event: Event) {
-    event.preventDefault();
-    this.updateSlide(this.timelineTotWidth, 'next');
+    this.updateSlide(this.eventsWrapperWidth, forward);
+    this._cdr.detectChanges();
   }
 
   onEventClick(event: Event, selectedItem: TimelineElement) {
     event.preventDefault();
-    if (this.disabled) {
+    if (this._disabled) {
       return;
     }
     let element = event.target;
     // detect click on the a single event - show new event content
-    let visibleItem = this.timelineElements[0];
-    this.timelineElements.forEach(function (item: TimelineElement) {
+    let visibleItem = this._timelineElements[0];
+    this._timelineElements.forEach(function (item: TimelineElement) {
       if (item.selected && item != selectedItem) {
         visibleItem = item;
         item.selected = false;
       }
     });
-    this.selectedIndex = this.timelineElements.indexOf(selectedItem);
+    this.selectedIndex = this._timelineElements.indexOf(selectedItem);
     selectedItem.selected = true;
-    HorizontalTimelineComponent.updateFilling(element, this.fillingLine, this.timelineTotWidth);
+    this.updateFilling(element);
+    this._cdr.detectChanges();
   }
 
   initTimeline(timeLines: TimelineElement[]) {
     let eventsMinLapse = HorizontalTimelineComponent.minLapse(timeLines);
     // assign a left position to the single events along the timeline
-    this.setDatePosition(timeLines, this.eventsMinDistance, eventsMinLapse);
+    this.setDatePosition(timeLines, this._eventsMinDistance, eventsMinLapse);
     // assign a width to the timeline
-    this.timelineTotWidth = this.setTimelineWidth(timeLines, this.eventsMinDistance,
-      eventsMinLapse);
+    this.setTimelineWidth(timeLines, this._eventsMinDistance, eventsMinLapse);
     // the timeline has been initialize - show it
     this.loaded = true;
   }
 
-  updateSlide(timelineTotWidth: number, string: string) {
-    // retrieve translateX value of eventsWrapper
+  updateSlide(timelineTotWidth: number, forward: boolean) {
     let translateValue = HorizontalTimelineComponent.getTranslateValue(this.eventsWrapper.nativeElement);
-    let wrapperWidth = HorizontalTimelineComponent.getElementWidth(this.timelineWrapper.nativeElement);
-    // translate the timeline to the left('next')/right('prev')
-    if (string === 'next') {
-      this.translateTimeline(translateValue - wrapperWidth + this.eventsMinDistance, wrapperWidth - timelineTotWidth)
+
+    if (forward) {
+      this.translateTimeline(translateValue - this._timelineWrapperWidth + this._eventsMinDistance, this._timelineWrapperWidth - timelineTotWidth)
     } else {
-      this.translateTimeline(translateValue + wrapperWidth - this.eventsMinDistance, null);
+      this.translateTimeline(translateValue + this._timelineWrapperWidth - this._eventsMinDistance, null);
     }
   }
 
-  updateTimelinePosition(string: string, element: Element) {
-    // translate timeline to the left/right according to the position of the selected event
+  updateTimelinePosition(element: Element) {
     let eventStyle = window.getComputedStyle(element);
     let eventLeft = HorizontalTimelineComponent.pxToNumber(eventStyle.getPropertyValue('left'));
-    let timelineWidth = HorizontalTimelineComponent.getElementWidth(this.timelineWrapper.nativeElement);
-    let timelineTotWidth = HorizontalTimelineComponent.getElementWidth(this.eventsWrapper.nativeElement);
-    let timelineTranslate = HorizontalTimelineComponent.getTranslateValue(this.eventsWrapper.nativeElement);
+    let translateValue = HorizontalTimelineComponent.getTranslateValue(this.eventsWrapper.nativeElement);
 
-    if ((string === 'next' && eventLeft > timelineWidth - timelineTranslate) || (string === 'prev' && eventLeft < -timelineTranslate)) {
-      this.translateTimeline(-eventLeft + timelineWidth / 2, timelineWidth - timelineTotWidth);
+    if (eventLeft > this._timelineWrapperWidth - translateValue) {
+      this.translateTimeline(-eventLeft + this._timelineWrapperWidth / 2, this._timelineWrapperWidth - this.eventsWrapperWidth);
     }
   }
 
@@ -228,23 +274,52 @@ export class HorizontalTimelineComponent implements AfterViewInit {
     // only negative translate value
     value = (value > 0) ? 0 : value;
     // do not translate more than timeline width
-    value = ( !(totWidth == null) && value < totWidth ) ? totWidth : value;
+    value = ( !(totWidth === null) && value < totWidth ) ? totWidth : value;
     HorizontalTimelineComponent.setTransformValue(this.eventsWrapper.nativeElement, 'translateX', value + 'px');
     // update navigation arrows visibility
-    this.prevLinkInactive = value == 0;
-    this.nextLinkInactive = value == totWidth;
+    this.prevLinkInactive = value === 0;
+    this.nextLinkInactive = value === totWidth;
   }
 
   setTimelineWidth(elements: TimelineElement[], width: number, eventsMinLapse: number) {
-    let timeSpan = HorizontalTimelineComponent.dayDiff(elements[0].date, elements[elements.length - 1].date);
+    let timeSpan = 100;
+    if (elements.length > 1) {
+      timeSpan = HorizontalTimelineComponent.dayDiff(elements[0].date, elements[elements.length - 1].date);
+    }
     let timeSpanNorm = timeSpan / eventsMinLapse;
     timeSpanNorm = Math.round(timeSpanNorm) + 4;
-    let totalWidth = timeSpanNorm * width;
-    this.eventsWrapper.nativeElement.style.width = totalWidth + 'px';
+    this.eventsWrapperWidth = timeSpanNorm * width;
     let aHref = this.eventsWrapper.nativeElement.querySelectorAll('a.selected')[0];
-    HorizontalTimelineComponent.updateFilling(aHref, this.fillingLine, totalWidth);
-    this.updateTimelinePosition('next', aHref);
-    return totalWidth;
+    this.updateFilling(aHref);
+    this.updateTimelinePosition(aHref);
+    return this.eventsWrapperWidth;
+  }
+
+  private updateFilling(element: any) {
+    // change .filling-line length according to the selected event
+    let eventStyle = window.getComputedStyle(element);
+    let eventLeft = eventStyle.getPropertyValue('left');
+    let eventWidth = eventStyle.getPropertyValue('width');
+    let eventLeftNum = HorizontalTimelineComponent.pxToNumber(eventLeft) + HorizontalTimelineComponent.pxToNumber(eventWidth) / 2;
+    let scaleValue = eventLeftNum / this.eventsWrapperWidth;
+    HorizontalTimelineComponent.setTransformValue(this.fillingLine.nativeElement, 'scaleX', scaleValue);
+  }
+
+  private initView(): void {
+    if (!this._viewInitialized) {
+      return;
+    }
+
+    if (this._timelineElements && this._timelineElements.length) {
+      for (let i = 0; i < this._timelineElements.length; i++) {
+        if (this._timelineElements[i].selected) {
+          this.selectedIndex = i;
+          break;
+        }
+      }
+      this.initTimeline(this._timelineElements);
+    }
+    this._cdr.detectChanges();
   }
 
   private setDatePosition(elements: TimelineElement[], min: number, eventsMinLapse: number) {
@@ -252,13 +327,12 @@ export class HorizontalTimelineComponent implements AfterViewInit {
     let i: number = 0;
     for (let component of elements) {
       let distance = HorizontalTimelineComponent.dayDiff(elements[0].date, component.date);
-      let distanceNorm = Math.round(distance / eventsMinLapse) + 2;
+      let distanceNorm = Math.round(distance / eventsMinLapse);
       timelineEventsArray[i].nativeElement.style.left = distanceNorm * min + 'px';
       // span
-      let span = timelineEventsArray[i].nativeElement.parentElement.children[1];
-      let aWidth = HorizontalTimelineComponent.getElementWidth(timelineEventsArray[i].nativeElement);
+      let span: HTMLSpanElement = <HTMLSpanElement>timelineEventsArray[i].nativeElement.parentElement.children[1];
       let spanWidth = HorizontalTimelineComponent.getElementWidth(span);
-      span.style.left = distanceNorm * min + (aWidth - spanWidth) / 2 + 'px';
+      span.style.left = distanceNorm * min + spanWidth / 2 + 'px';
       i++;
     }
   }

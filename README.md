@@ -18,6 +18,7 @@ Horizontal Timeline Component on Angular2 (original component: https://codyhouse
 | `dateFormat` | `string` | Date format string | `'dd.MM.yyyy'` |
 | `disabled` | `boolean` | If `true`, only left and right buttons are clickable | `false` |
 | `showContent` | `boolean` | Use `false` to hide content, `true` to show content | `false` |
+| `timelineWrapperWidth` | `number` | Width of timeline wrapper in px | `720` |
 
 ### TimelineElement interface
 
